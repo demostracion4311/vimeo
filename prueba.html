@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Grabador de pantalla</title>
+  </head>
+  <body>
+    <h1>Grabador de pantalla</h1>
+    <label for="name_video">Nombre del video:</label>
+    <input type="text" id="name_video" /><br />
+    <button id="start">Iniciar</button>
+    <button id="stop" disabled>Detener</button>
+    <div>Temporizador: <span id="timer">00:00</span></div>
+    <script>
+      const startButton = document.getElementById("start");
+      const stopButton = document.getElementById("stop");
+      const timerElement = document.getElementById("timer");
+      const nameVideo = document.getElementById("name_video");
+      const audioContext = new AudioContext();
+
+      let mediaRecorder = null;
+      let timerInterval;
+      let seconds = 0;
+
+      startButton.addEventListener("click", () => {
+        startButton.disabled = true;
+        stopButton.disabled = false;
+        startRecording();
+      });
+
+      stopButton.addEventListener("click", () => {
+        stopButton.disabled = true;
+        mediaRecorder.stop();
+      });
+
+      async function startRecording() {
+        const displayMediaOptions = {
+          video: {
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            bitrate: { ideal: 10000000 }, // 10 Mbps
+          },
+          audio: {
+            sampleRate: { ideal: 48000 },
+            channelCount: { ideal: 2 },
+            bitrate: { ideal: 192000 }, // 192 Kbps
+          },
+        };
+
+        try {
+          // Obtener el stream de la pantalla
+          const displayStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+
+          // Obtener el stream del micrófono
+          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+          // Combinar el stream de la pantalla y el stream del micrófono
+          const combinedStream = new MediaStream();
+          const audioSourceNode = new MediaStreamAudioSourceNode(audioContext, { mediaStream: audioStream });
+          combinedStream.addTrack(displayStream.getVideoTracks()[0]);
+          combinedStream.addTrack(audioSourceNode.connect(audioContext.createMediaStreamDestination()).stream.getAudioTracks()[0]);
+
+          // Crear un objeto MediaRecorder para grabar el stream combinado
+          mediaRecorder = new MediaRecorder(combinedStream, {
+            mimeType: "video/webm; codecs=vp9,opus",
+            videoBitsPerSecond: 10000000, // 10 Mbps
+            audioBitsPerSecond: 128000,
+            
+          });
+
+          // Empezar la grabación y el temporizador
+          mediaRecorder.start();
+          startTimer();
+
+          // Añadir el nombre del video como metadata
+          mediaRecorder.ondataavailable = (event) => {
+            const blob = new Blob([event.data], { type: "video/webm" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${nameVideo.value}.webm`;
+            a.click();
+            URL.revokeObjectURL(url);
+          };
+
+          // Cuando la grabación acaba, parar el temporizador y desactivar el botón de detener
+          mediaRecorder.onstop = () => {
+            clearInterval(timerInterval);
+           
+            stopButton.disabled = true;
+    seconds = 0;
+    timerElement.innerText = "00:00";
+    startButton.disabled = false;
+    };
+    } catch (error) {
+    console.error(error);
+    }
+    }  function startTimer() {
+        timerInterval = setInterval(() => {
+          seconds++;
+          const minutes = Math.floor(seconds / 60);
+          const secondsDisplay = seconds % 60;
+          timerElement.innerText = `${minutes < 10 ? "0" : ""}${minutes}:${secondsDisplay < 10 ? "0" : ""}${secondsDisplay}`;
+        }, 1000);
+      }
+</script>
+</body>
+</html>
