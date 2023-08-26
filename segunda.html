@@ -3,13 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <title>Grabador de pantalla 2</title>
+    <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <h1>Grabador de pantalla</h1>
     <label for="name_video">Nombre del video:</label>
     <input type="text" id="name_video" /><br />
-    <button id="start">Iniciar</button>
-    <button id="stop" disabled>Detener</button>
+    <button class="start" id="start">Iniciar</button>
+    <button class="stop" id="stop" disabled>Detener</button>
     <div>Temporizador: <span id="timer">00:00</span></div>
     <script>
       const startButton = document.getElementById("start");
@@ -84,7 +85,7 @@
       document.body.appendChild(a);
       a.style = "display: none";
       a.href = url;
-      a.download = `${nameVideo.value || "grabacion"}.webm`;
+      a.download = `${nameVideo.value || "grabacion"}.mp4`;
       a.click();
 
       URL.revokeObjectURL(url);
